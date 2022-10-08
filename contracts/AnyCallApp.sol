@@ -2,17 +2,17 @@
 pragma solidity ^0.8.0;
 
 import "./Administrable.sol";
-import "./IAnycallV6Proxy.sol";
+import "./IAnycallProxy.sol";
 import "./IExecutor.sol";
 
 abstract contract AnyCallApp is Administrable {
-    uint256 public flag; // 0: pay on dest chain, 2: pay on source chain
+    uint256 public flag; // 0: pay on src chain, 2: pay on dest chain
     address public anyCallProxy;
 
     mapping(uint256 => address) internal peer;
 
     modifier onlyExecutor() {
-        require(msg.sender == IAnycallV6Proxy(anyCallProxy).executor());
+        require(msg.sender == IAnycallProxy(anyCallProxy).executor());
         _;
     }
 
@@ -36,19 +36,23 @@ abstract contract AnyCallApp is Administrable {
     }
 
     function _anyExecute(uint256 fromChainID, bytes calldata data) internal virtual returns (bool success, bytes memory result);
+    function _anyFallback(bytes memory data) internal virtual returns (bool success, bytes memory result);
 
     function _anyCall(address _to, bytes memory _data, address _fallback, uint256 _toChainID) internal {
         if (flag == 2) {
-            IAnycallV6Proxy(anyCallProxy).anyCall{value: msg.value}(_to, _data, _fallback, _toChainID, flag);
+            IAnycallProxy(anyCallProxy).anyCall{value: msg.value}(_to, _data, _fallback, _toChainID, flag);
         } else {
-            IAnycallV6Proxy(anyCallProxy).anyCall(_to, _data, _fallback, _toChainID, flag);
+            IAnycallProxy(anyCallProxy).anyCall(_to, _data, _fallback, _toChainID, flag);
         }
     }
 
     function anyExecute(bytes calldata data) external onlyExecutor returns (bool success, bytes memory result) {
-        (address callFrom, uint256 fromChainID,) = IExecutor(IAnycallV6Proxy(anyCallProxy).executor()).context();
+        (address callFrom, uint256 fromChainID,) = IExecutor(IAnycallProxy(anyCallProxy).executor()).context();
         require(peer[fromChainID] == callFrom, "call not allowed");
         _anyExecute(fromChainID, data);
     }
 
+    function anyFallback(bytes memory data) external onlyExecutor returns (bool success, bytes memory result) {
+        return _anyFallback(data);
+    }
 }
