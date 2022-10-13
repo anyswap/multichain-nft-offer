@@ -26,7 +26,7 @@ contract MainChain_NFT is ERC721Enumerable, AnyCallApp {
     ) public payable {
         _burn(tokenId);
         bytes memory data = abi.encode(Method_Transfer, to, tokenId, false);
-        _anyCall(peer[toChainID], data, address(0), toChainID);
+        _anyCall_no_fallback(peer[toChainID], data, toChainID);
     }
 
     function _anyExecute(uint256 fromChainID, bytes calldata data)
