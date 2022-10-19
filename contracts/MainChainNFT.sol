@@ -53,9 +53,9 @@ contract MainChain_NFT is ERC721Enumerable, AnyCallApp {
         override
         returns (bool success, bytes memory result)
     {
-        (bytes32 method, address to, uint256 tokenId) = abi.decode(
+        (bytes32 method, address to, uint256 tokenId, bool sendBack) = abi.decode(
             data,
-            (bytes32, address, uint256)
+            (bytes32, address, uint256, bool)
         );
         if (method == Method_Claim) {
             // revert claim
